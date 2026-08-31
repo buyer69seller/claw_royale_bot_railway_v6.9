@@ -35,6 +35,8 @@ class RestClient:
             self._version = data.get("version") or data.get("data", {}).get("version")
             return self._version
     
+    # ===== ACCOUNT =====
+    
     async def get_account(self) -> Dict[str, Any]:
         logger.info("📡 Fetching account data...")
         try:
@@ -44,8 +46,7 @@ class RestClient:
         except Exception as e:
             logger.error(f"❌ Failed to get account: {e}")
             return {}
-    # src/client/rest_client.py - tambahkan setelah get_account()
-
+    
     # ===== AGENT TOKEN =====
     
     async def ensure_agent_token(self) -> bool:
@@ -98,14 +99,22 @@ class RestClient:
         except Exception as e:
             logger.error(f"Failed to check agent token: {e}")
             return {"has_token": False}
-    async def get_dashboard_games(self, limit: int = 10, cursor: Optional[str] = None) -> Dict:
-        params = {"limit": limit}
-        if cursor:
-            params["cursor"] = cursor
-        return await self._request("GET", "/accounts/me/dashboard/games", params=params)
+    
+    # ===== REWARDS =====
     
     async def redeem_code(self, code: str) -> Dict:
         return await self._request("POST", "/redeem", json={"code": code})
+    
+    async def get_dashboard_overview(self) -> Dict[str, Any]:
+        return await self._request("GET", "/accounts/me/dashboard/overview")
+    
+    async def claim_quest(self, quest_key: str, tier: int) -> Dict:
+        return await self._request("POST", f"/api/quests/{quest_key}/claim/{tier}")
+    
+    async def claim_daily(self) -> Dict:
+        return await self._request("POST", "/api/daily-quests/claim")
+    
+    # ===== LOADOUT =====
     
     async def get_loadout(self) -> Dict[str, Any]:
         return await self._request("GET", "/accounts/me/loadout")
@@ -125,14 +134,7 @@ class RestClient:
     async def get_inventory(self) -> Dict[str, Any]:
         return await self._request("GET", "/accounts/me/inventory")
     
-    async def get_dashboard_overview(self) -> Dict[str, Any]:
-        return await self._request("GET", "/accounts/me/dashboard/overview")
-    
-    async def claim_quest(self, quest_key: str, tier: int) -> Dict:
-        return await self._request("POST", f"/api/quests/{quest_key}/claim/{tier}")
-    
-    async def claim_daily(self) -> Dict:
-        return await self._request("POST", "/api/daily-quests/claim")
+    # ===== MARKETPLACE =====
     
     async def get_marketplace_listings(self, filters: Dict = None) -> Dict[str, Any]:
         params = filters or {}
@@ -140,6 +142,8 @@ class RestClient:
     
     async def buy_marketplace_listing(self, listing_id: str) -> Dict:
         return await self._request("POST", f"/api/marketplace/listings/{listing_id}/buy")
+    
+    # ===== INTERNAL =====
     
     async def _request(self, method: str, path: str, **kwargs) -> Dict:
         if not self._session:
