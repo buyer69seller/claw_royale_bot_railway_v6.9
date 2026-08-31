@@ -44,7 +44,60 @@ class RestClient:
         except Exception as e:
             logger.error(f"❌ Failed to get account: {e}")
             return {}
+    # src/client/rest_client.py - tambahkan setelah get_account()
+
+    # ===== AGENT TOKEN =====
     
+    async def ensure_agent_token(self) -> bool:
+        """
+        Pastikan agent token ada, register jika belum
+        Berdasarkan skill.md: agent token diperlukan untuk join game
+        """
+        try:
+            # Cek status token
+            account = await self.get_account()
+            readiness = account.get("readiness", {})
+            
+            if readiness.get("agentToken"):
+                logger.info("✅ Agent token already exists")
+                return True
+            
+            # Register token
+            logger.info("🔑 Registering agent token...")
+            result = await self._request("POST", "/api/agent-token/register")
+            if result:
+                logger.info("✅ Agent token registered successfully!")
+                return True
+            else:
+                logger.warning("⚠️ Failed to register agent token")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Agent token error: {e}")
+            return False
+    
+    async def register_agent_token(self) -> Dict[str, Any]:
+        """Register agent token untuk akun"""
+        logger.info("🔑 Registering agent token...")
+        try:
+            result = await self._request("POST", "/api/agent-token/register")
+            logger.info("✅ Agent token registered successfully!")
+            return result
+        except Exception as e:
+            logger.warning(f"Agent token registration failed: {e}")
+            return {}
+    
+    async def get_agent_token_status(self) -> Dict[str, Any]:
+        """Cek status agent token"""
+        try:
+            account = await self.get_account()
+            readiness = account.get("readiness", {})
+            has_token = readiness.get("agentToken", False)
+            logger.info(f"🔑 Agent token status: {has_token}")
+            return {"has_token": has_token, "account": account}
+        except Exception as e:
+            logger.error(f"Failed to check agent token: {e}")
+            return {"has_token": False}
     async def get_dashboard_games(self, limit: int = 10, cursor: Optional[str] = None) -> Dict:
         params = {"limit": limit}
         if cursor:
